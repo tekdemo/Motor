@@ -181,6 +181,7 @@ byte _coastValue;
 		if(_mirrored)val=-val;
 				
 		_val=constrain(val,-255,255);
+		//TODO: Since coast mode may be active low, confirm (255-_val) is not needed in place of _val during motor write
 		if(_val>=0){
 			analogWrite(_a,_coastValue);
 			analogWrite(_c,_val);
@@ -288,6 +289,8 @@ public:
 			analogWrite(_a,-val);
 			analogWrite(_c,MOTOR_COAST);
 		}	
+		//TODO: Since this is active low, we should write out (255-val), not val
+		
 	};
 	void brake(void){
 		brake(0);

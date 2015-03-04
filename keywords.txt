@@ -1,0 +1,16 @@
+Motor		KEYWORD1
+DVR8837		KEYWORD1
+DualHBridge	KEYWORD1
+
+
+brake		KEYWORD2
+coast		KEYWORD2
+write		KEYWORD2
+read		KEYWORD2
+isEnabled	KEYWORD2
+mirror		KEYWORD2
+enableCoastMode KEYWORD2
+enable 		KEYWORD2
+disable 	KEYWORD2
+
+

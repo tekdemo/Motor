@@ -49,15 +49,15 @@ public:
 //*/
 
 class Motor{
+	/*FIXME: Cannot have data members in a "virtual class"
 protected: 
-	/** Last value written to the motor
-	 */
 	int _val;
 	boolean _enabled;
 	boolean _mirrored;
 	boolean _enableCoastMode;
-         byte _brakeValue;
-         byte _coastValue;
+	byte _brakeValue;
+	byte _coastValue;
+	//*/
 public:
 	/** Not defined: Must be created per class, as per the needed declarations
 	 */
@@ -66,55 +66,55 @@ public:
 		
 	/** Enables writes to the motor, sets to last known value (if any)
 	 */
-	virtual void enable();
+	virtual void enable()=0;
 	
 	/** Stops motor, and disables writes to the motor
 	 *  May be implimented in hardware or software, depending on motor controller
 	 */
-	virtual void disable();
-	virtual boolean isEnabled();	
+	virtual void disable()=0;
+	virtual boolean isEnabled()=0;	
 	
 	/** Reverse all motor direction writes
 	 */
-	virtual void mirror();
+	virtual void mirror()=0;
 	
 	/** Enable Coast Mode
 	/*  Passing True provides coast mode 
 	 *  Passing False provides brake mode (default for most cases)
 	 */
-	virtual void enableCoastMode(boolean coast);
+	virtual void enableCoastMode(boolean coast)=0;
 	
 	/** Engage the motor while braking between motor pulses
 	 *  This pushes, but doesn't easily reverse if negative force is applied
 	 */
-	virtual void brake(int value);
+	virtual void brake(int value)=0;
 
 	/** Brake the motor (hard stop)
 	 * Same as brake(0);
 	 */
-	virtual void brake(void);
+	virtual void brake(void)=0;
 
 	/** Engage the motor while braking between motor pulses
 	 *  This pushes, provides lower torque on lower value writes, and allows pushback when negative force is applied. 
 	 *  Also known as mixed-decay mode in documentation and datasheets. 
 	 * NOTE: Not possible with all hardware, and may be disabled or set to brake();
 	 */
-	virtual void coast(int value);
+	virtual void coast(int value)=0;
 	
 	/** Disconnect the motor (soft stop)
  	 * Same as coast(0);
 	 */
-	virtual void coast(void);
+	virtual void coast(void)=0;
 
 	/**
 	 * Return the last value written to the motor
 	 */
-	virtual int read();
+	virtual int read()=0;
 	
 	/** Write a value to the motor using the currently set brake mode if enabled.
 	 *  A sane person uses this coast(int) or brake(int) according to the default brake mode
 	 */
-	virtual void write(int value);
+	virtual void write(int value)=0;
 };
 
 
@@ -125,6 +125,12 @@ private:
 	int _a; //anticlockwise rotating pin
 	int _c; //clockwise rotating pin
 	int _en; //pin for enable
+	boolean _enabled;
+	boolean _mirrored;
+	boolean _enableCoastMode;
+	byte _brakeValue;
+	byte _coastValue;
+	
 
 public:			
 	DVR8837(int a, int c,int en){
@@ -159,12 +165,12 @@ byte _coastValue;
 		return _enabled;
 	}
 
-	void brake(int val){
+	void brake(int value){
 		if(!_enabled)return;
 		
-		if(_mirrored)val=-val;
+		if(_mirrored)value=-value;
 		
-		_val=constrain(val,-255,255);
+		_val=constrain(value,-255,255);
 		if(_val>=0){
 			analogWrite(_a,_brakeValue);
 			analogWrite(_c,_val);
@@ -175,12 +181,12 @@ byte _coastValue;
 		}
 	};
 	
-	void coast(int val){
+	void coast(int value){
 		if(!_enabled)return;
 		
-		if(_mirrored)val=-val;
+		if(_mirrored)value=-value;
 				
-		_val=constrain(val,-255,255);
+		_val=constrain(value,-255,255);
 		//TODO: Since coast mode may be active low, confirm (255-_val) is not needed in place of _val during motor write
 		if(_val>=0){
 			analogWrite(_a,_coastValue);

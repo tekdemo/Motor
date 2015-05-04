@@ -10,12 +10,6 @@
 //unfortunately affects the delay() and millis() timing. 
 //http://playground.arduino.cc/Main/TimerPWMCheatsheet
 
-#define MOTOR_COAST 0
-#define MOTOR_BRAKE 1
-//Version 3 contains a DRV8837
-
-
-
 
 /*
  Create a template for which other classes can then inherit and override to simplify class creation
@@ -121,6 +115,7 @@ public:
 
 class DVR8837 :public Motor{
 private:
+protected:
 	int _val;
 	int _a; //anticlockwise rotating pin
 	int _c; //clockwise rotating pin
@@ -219,6 +214,59 @@ byte _coastValue;
 			
 	
 }; //manditory for classes, apparently.
+
+//Simple DualPWM class with no modifications
+class DVR8837 :public DualPWM{
+public:
+	DVR8837(int a,int c, int en)
+	:DualPWM(a,c,en){}
+};
+
+//TODO: Test on hardware
+class ZXBM5210 :public DualPWM{
+public:
+	ZXBM5210(int a,int c, int en)
+	:DualPWM(a,c,en){}
+};
+
+
+//DualPWM, but with slightly annoying to impliment coast mode.
+//Will coast when disabled
+//TODO: add proper support for coast
+class SN754410NE :public DualPWM{
+public:
+	SN754410NE(int a,int c, int en)
+	:DualPWM(a,c,en){}
+	
+	//TODO Mixed-mode coast can technically be implimented as a third PWM pin on enable
+	//However, as it requires a third PWM, it's not yet implimented due to 
+	// problematic results when used with non-pwm pins.
+	// when disabled, will result in coast mode
+	void coast(int value){
+		DualPWM::brake(value);
+	}
+	void coast(void ){
+		DualPWM::brake();
+	}
+};
+
+// Found on Pololu Dual Motor Driver shields, https://www.pololu.com/product/2502
+class VNH5019 :public DualPWM{
+public:
+	VNH5019(int a,int c, int en)
+	:DualPWM(a,c,en){}
+	
+	//TODO Mixed-mode coast can technically be implimented as a third PWM pin on enable
+	//However, as it requires a third PWM, it's not yet implimented due to 
+	// problematic results when used with non-pwm pins.
+	// when disabled, will result in coast mode
+	void coast(int value){
+		DualPWM::brake(value);
+	}
+	void coast(void ){
+		DualPWM::brake();
+	}
+}; 
 
 /**
 class DualHBridge: public Motor {

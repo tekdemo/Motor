@@ -1,6 +1,6 @@
 # Motor.h
 
-This class aims to simplify adding motors to Arduino projects. Rather than cluttering each directional change with multiple PWM writes, this class simplifies it to
+This class aims to simplify adding motors and motor control ICs to Arduino projects. Rather than cluttering each directional change with multiple PWM writes, enable IO writes, and other IC specific handling, this class wraps common functions into a nice, simple API:
 ``` Arduino
 #include <Motor.h>
 DualPWM motor(9,10,8);
@@ -15,7 +15,7 @@ void setup(){
 void loop(){}
 ```
 
-This class also adds additional feautures to clean up the code base for readablity :
+This class also adds additional features to clean up the code base for readablity, and enable more complex features without code redundancy :
 
 - Initialization automatically configures pin directions, and sets motor in a known state.
 - `motor.mirror()` lets you write the same value to motors mounted opposite each other. This avoids tracking negatives all over your code.

@@ -43,15 +43,14 @@ public:
 //*/
 
 class Motor{
-	/*FIXME: Cannot have data members in a "virtual class"
-protected: 
+	/*Suggested variables for typical class declarations
 	int _val;
 	boolean _enabled;
 	boolean _mirrored;
 	boolean _enableCoastMode;
 	byte _brakeValue;
 	byte _coastValue;
-	//*/
+	*/
 public:
 	/** Not defined: Must be created per class, as per the needed declarations
 	 */
@@ -73,7 +72,7 @@ public:
 	virtual void mirror()=0;
 	
 	/** Enable Coast Mode
-	/*  Passing True provides coast mode 
+	 *  Passing True provides coast mode 
 	 *  Passing False provides brake mode (default for most cases)
 	 */
 	virtual void enableCoastMode(boolean coast)=0;
@@ -113,7 +112,7 @@ public:
 
 
 
-class DVR8837 :public Motor{
+class DualPWM :public Motor{
 private:
 protected:
 	int _val;
@@ -123,12 +122,11 @@ protected:
 	boolean _enabled;
 	boolean _mirrored;
 	boolean _enableCoastMode;
+	
 	byte _brakeValue;
 	byte _coastValue;
-	
-
 public:			
-	DVR8837(int a, int c,int en){
+	DualPWM(int a, int c,int en){
 		//Constructor: Set motor pins for writing
 		_a=a;
 		_c=c; 
@@ -139,7 +137,6 @@ public:
 		enable();
                _brakeValue=255;
                _coastValue=0;
-byte _coastValue;
 
 	};
 	
@@ -182,7 +179,10 @@ byte _coastValue;
 		if(_mirrored)value=-value;
 				
 		_val=constrain(value,-255,255);
-		//TODO: Since coast mode may be active low, confirm (255-_val) is not needed in place of _val during motor write
+
+		//TODO: Verify _val inversion is correct and does sane things
+		_val=255-_val;
+		
 		if(_val>=0){
 			analogWrite(_a,_coastValue);
 			analogWrite(_c,_val);
@@ -193,10 +193,10 @@ byte _coastValue;
 		}	
 	};
 	void brake(void){
-		brake(0);
+		brake(_brakeValue);
 	};
 	void coast(void){
-		coast(0);
+		coast(_coastValue);
 	};
 
 	void write(int value){
@@ -211,7 +211,6 @@ byte _coastValue;
 	void enableCoastMode(boolean coast){
 		_enableCoastMode=coast;
 	}
-			
 	
 }; //manditory for classes, apparently.
 
@@ -357,4 +356,4 @@ public:
 }; //manditory for classes, apparently.
 //*/
 
-#endif MOTORS_H
+#endif

@@ -21,16 +21,32 @@ This class also adds additional features to clean up the code base for readablit
 - `motor.mirror()` lets you write the same value to motors mounted opposite each other. This avoids tracking negatives all over your code.
 - `motor.enable()` and `motor.disable()` will halt all future writes to the motor, even if the motor IC does not have hardware disabling. Great for emergency functions, error handling, or disarm functions via remote control.
 - `motor.write()` writes motor values according to  `motor.enableCoastMode(boolean)` which lets you change the default brake/coast modes in a single place.
-- `brake()` function accepts optional parameters(`brake(-125)'), allowing you to override enableCoastMode settings for critical movement. 
-- Similarly, `coast()` accepts values for mixed-mode decay. However, this mode is not operational on all driver ICs.
+- `brake()` function accepts optional parameters( `brake(-125)` ), allowing you to override enableCoastMode settings for critical movement. 
+- Similarly, `coast()` accepts values for mixed-mode decay operation, if supported by the driver IC.
 - `motor.read()` reports the last value, reducing variables elsewhere
 
 
 ## Extending 
 The base class enforces interface compliance, ensuring that any additional motors will be interchangable with existing code. 
 
-In the above example, switching to a new chip can be done by replacing `DualPWM motor(9,10,8);` with  `DVR8837 motor(9,10,8);`, 
-correcting the hardware, and the code will respond identically. This makes operating multiple hardware revisions painless. This also allows you to create container
-classes that have one or more Motor instances, that don't rely on any specific implimentation. Altering hardware is as simple as a one-line code change.
- 
+In the above example, switching to a new chip in hardware can be done by replacing `DualPWM motor(9,10,8);` with  `DVR8837 motor(9,10,8);`. This makes operating and maintining multiple hardware revisions painless. This also allows you to create container
+classes that have one or more Motor instances, without internally relying on specific implimentations.
 
+## Current Support:
+Partially tested and functional chips:
+
+	- Generic PWM/PWM/Enable chips
+	- TI DVR8837
+	- TI SN754410NE
+	- ZXBM5210
+	- VNH5019
+	
+Additional ICs planned as they're added to hardware and tested
+
+	- MOSTFET and BJT arrays, with switching deadband and software shoot-through protection
+	- Generic OutputA/OutputB/PWM ICs
+	- Generic Direction/PWM ICs
+	
+## Known Issues
+	- Handling of Coast mode for dual-PWM profiles is lacking
+	- Coast mode output values aren't sane for some chips.

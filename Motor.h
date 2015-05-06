@@ -70,6 +70,7 @@ public:
 	/** Reverse all motor direction writes
 	 */
 	virtual void mirror()=0;
+	virtual void mirror(boolean mirrored)=0;
 	
 	/** Enable Coast Mode
 	 *  Passing True provides coast mode 
@@ -207,6 +208,9 @@ public:
 	void mirror(){
 		_mirrored=!_mirrored;
 	}
+	void mirror(boolean mirrored){
+		_mirrored=mirrored;
+	}
 		
 	void enableCoastMode(boolean coast){
 		_enableCoastMode=coast;
@@ -249,23 +253,145 @@ public:
 	}
 };
 
-// Found on Pololu Dual Motor Driver shields, https://www.pololu.com/product/2502
-class VNH5019 :public DualPWM{
-public:
-	VNH5019(int a,int c, int en)
-	:DualPWM(a,c,en){}
+
+
+class FourWire :public Motor{
+private:
+protected:
+	int _val;
+	int _a; //anticlockwise rotating pin
+	int _c; //clockwise rotating pin
+	int _pwm; //clockwise rotating pin
+	int _en; //pin for enable
+	boolean _enabled;
+	boolean _mirrored;
+	boolean _enableCoastMode;
 	
-	//TODO Mixed-mode coast can technically be implimented as a third PWM pin on enable
-	//However, as it requires a third PWM, it's not yet implimented due to 
-	// problematic results when used with non-pwm pins.
-	// when disabled, will result in coast mode
+	byte _brakeValue;
+	byte _coastValue;
+public:			
+	FourWire(int a, int c,int pwm,int en){
+		//Constructor: Set motor pins for writing
+		_a=a;
+		_c=c; 
+		_en=en;
+		_pwm=pwm;
+		pinMode(_a,OUTPUT);
+		pinMode(_c,OUTPUT);
+		pinMode(_en,OUTPUT);
+		pinMode(_pwm,OUTPUT);
+		enable();
+               _brakeValue=255;
+               _coastValue=0;
+
+	};
+	
+	int read(){
+		return _val;
+	};
+	
+	void enable(){
+		digitalWrite(_en,HIGH);
+		_enabled=true;
+	}
+	void disable(){
+		digitalWrite(_en,LOW);	
+		write(0);
+		
+		_enabled=false;
+		
+	}
+	boolean isEnabled(){
+		return _enabled;
+	}
+
+	void brake(int value){
+		if(!_enabled)return;
+		
+		if(_mirrored)value=-value;
+		
+		_val=constrain(value,-255,255);
+				
+		if(_val==0){
+			digitalWrite(_a,HIGH);
+			digitalWrite(_c,HIGH);
+		}
+		else if(_val>0){ //anticlockwise
+			digitalWrite(_a,HIGH);
+			digitalWrite(_c,LOW);//low
+		}
+		else if(_val<0){
+			digitalWrite(_a,LOW);
+			digitalWrite(_c,HIGH);
+		}
+		analogWrite(_pwm, abs(_val));
+	};
+	
 	void coast(int value){
-		DualPWM::brake(value);
+		if(!_enabled)return;
+		
+		if(_mirrored)value=-value;
+
+		_val=constrain(value,-255,255);
+
+		/*TODO: This emulates a mixed mode decay fairly well,
+		 *but doesn't seem to be a proper way to handle it. 
+		 * Eventually, a slog through the datasheet may be in order,
+		 * and possibly attempting to PWM the _en pin.
+		 */ 
+		analogWrite(_pwm, 128);
+		
+		if(_val==0){
+			analogWrite(_c,0);
+			analogWrite(_a,0);
+		}
+		else if(_val>0){
+			analogWrite(_c,0);
+			analogWrite(_a,255-_val);
+		}
+		else if(_val<0){
+			analogWrite(_a,0);
+			analogWrite(_c,255-abs(_val));
+		}
+
+	};
+	void brake(void){
+		brake(_brakeValue);
+	};
+	void coast(void){
+		coast(_coastValue);
+	};
+
+	void write(int value){
+		if(_enableCoastMode==true)coast(value);
+		else brake(value);
 	}
-	void coast(void ){
-		DualPWM::brake();
+		
+	void mirror(){
+		_mirrored=!_mirrored;
 	}
+	void mirror(boolean mirrored){
+		_mirrored=mirrored;
+	}
+		
+	void enableCoastMode(boolean coast){
+		_enableCoastMode=coast;
+	}
+	
+}; //manditory for classes, apparently.
+
+// Found on Pololu Dual Motor Driver shields, https://www.pololu.com/product/2502
+class VNH5019 :public FourWire{
+public:
+	VNH5019(int a,int c, int en,int pwm)
+	:FourWire(a,c,en,pwm){}
 }; 
+
+
+
+
+
+
 
 /**
 class DualHBridge: public Motor {

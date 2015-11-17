@@ -113,7 +113,7 @@ public:
 
 
 
-class DualPWM :public Motor{
+class DualPWMEnable :public Motor{
 private:
 protected:
 	int _val;
@@ -127,7 +127,7 @@ protected:
 	byte _brakeValue;
 	byte _coastValue;
 public:			
-	DualPWM(int a, int c,int en){
+	DualPWMEnable(int a, int c,int en){
 		//Constructor: Set motor pins for writing
 		_a=a;
 		_c=c; 
@@ -180,16 +180,13 @@ public:
 		if(_mirrored)value=-value;
 				
 		_val=constrain(value,-255,255);
-
-		//TODO: Verify _val inversion is correct and does sane things
-		_val=255-_val;
 		
 		if(_val>=0){
 			analogWrite(_a,_coastValue);
-			analogWrite(_c,_val);
+			analogWrite(_c,255-_val);
 		}
 		else if(_val<0){
-			analogWrite(_a,abs(_val));
+			analogWrite(_a,255-abs(_val));
 			analogWrite(_c,_coastValue);
 		}	
 	};
@@ -218,38 +215,135 @@ public:
 	
 }; //manditory for classes, apparently.
 
+class DualPWM :public Motor{
+private:
+protected:
+	int _val;
+	int _a; //anticlockwise rotating pin
+	int _c; //clockwise rotating pin
+	boolean _enabled;
+	boolean _mirrored;
+	boolean _enableCoastMode;
+	
+	byte _brakeValue;
+	byte _coastValue;
+public:			
+	DualPWM(int a, int c){
+		//Constructor: Set motor pins for writing
+		_a=a;
+		_c=c; 
+		pinMode(_a,OUTPUT);
+		pinMode(_c,OUTPUT);
+		enable();
+               _brakeValue=255;
+               _coastValue=0;
+
+	};
+	
+	int read(){
+		return _val;
+	};
+	
+	void enable(){
+		_enabled=true;
+	}
+	void disable(){
+		_enabled=false;
+		coast();
+		
+	}
+	boolean isEnabled(){
+		return _enabled;
+	}
+
+	void brake(int value){
+		if(!_enabled)return;
+		
+		if(_mirrored)value=-value;
+		
+		_val=constrain(value,-255,255);
+		if(_val>=0){
+			analogWrite(_a,_brakeValue);
+			analogWrite(_c,_val);
+		}
+		else if(_val<0){
+			analogWrite(_a,abs(_val));
+			analogWrite(_c,_brakeValue);
+		}
+	};
+	
+	void coast(int value){
+		if(!_enabled)return;
+		
+		if(_mirrored)value=-value;
+				
+		_val=constrain(value,-255,255);
+		
+		if(_val>=0){
+			analogWrite(_a,_coastValue);
+			analogWrite(_c,255-_val);
+		}
+		else if(_val<0){
+			analogWrite(_a,255-abs(_val));
+			analogWrite(_c,_coastValue);
+		}	
+	};
+	void brake(void){
+		brake(_brakeValue);
+	};
+	void coast(void){
+		coast(_coastValue);
+	};
+
+	void write(int value){
+		if(_enableCoastMode==true)coast(value);
+		else brake(value);
+	}
+		
+	void mirror(){
+		_mirrored=!_mirrored;
+	}
+	void mirror(boolean mirrored){
+		_mirrored=mirrored;
+	}
+		
+	void enableCoastMode(boolean coast){
+		_enableCoastMode=coast;
+	}
+	
+}; //manditory for classes, apparently.
 //Simple DualPWM class with no modifications
-class DVR8837 :public DualPWM{
+class DVR8837 :public DualPWMEnable{
 public:
 	DVR8837(int a,int c, int en)
-	:DualPWM(a,c,en){}
+	:DualPWMEnable(a,c,en){}
 };
 
 //TODO: Test on hardware
 class ZXBM5210 :public DualPWM{
 public:
-	ZXBM5210(int a,int c, int en)
-	:DualPWM(a,c,en){}
+	ZXBM5210(int a,int c)
+	:DualPWM(a,c){}
 };
 
 
 //DualPWM, but with slightly annoying to impliment coast mode.
 //Will coast when disabled
 //TODO: add proper support for coast
-class SN754410NE :public DualPWM{
+class SN754410NE :public DualPWMEnable{
 public:
 	SN754410NE(int a,int c, int en)
-	:DualPWM(a,c,en){}
+	:DualPWMEnable(a,c,en){}
 	
 	//TODO Mixed-mode coast can technically be implimented as a third PWM pin on enable
 	//However, as it requires a third PWM, it's not yet implimented due to 
 	// problematic results when used with non-pwm pins.
 	// when disabled, will result in coast mode
 	void coast(int value){
-		DualPWM::brake(value);
+		DualPWMEnable::brake(value);
 	}
 	void coast(void ){
-		DualPWM::brake();
+		DualPWMEnable::brake();
 	}
 };
 
@@ -339,6 +433,7 @@ public:
 		 * Eventually, a slog through the datasheet may be in order,
 		 * and possibly attempting to PWM the _en pin.
 		 */ 
+		//TODO: Test running PWM at _val alongside the pin, which should fix everything
 		analogWrite(_pwm, 128);
 		
 		if(_val==0){
@@ -393,7 +488,15 @@ public:
 
 
 
-/**
+/** This class is a raw implimentation intended for directly controlling
+ *  transistor drivers on an H-Bridge. 
+ * 
+ * Issues to keep an eye on: 
+ * - Shoot-through, which requires a small delay when switching transistors
+ *   on the same side of the motor.
+ * - Voltage drive levels. Depending on voltage levels, the raw bridge may not 
+ *   be able to fully turn on the high voltage drivers
+ * 
 class DualHBridge: public Motor {
 private:
 	int _val;
